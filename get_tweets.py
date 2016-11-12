@@ -10,10 +10,12 @@
 # 2do # Create crontab regular execution of script http://www.computerhope.com/unix/ucrontab.htm
 # 2do # Automate the switch from initial run of 200 tweets to maintenance 20 tweet reruns
 # 2do # Reduce tweet list file automatically
-
 # 2do # TEST put RT search first? then...
 	  # search ALL keywords first, then decide whether or not to retweet... +1 for each found work then retweet if >1?
+      # 2do # inspect why certain rt's were retweeted, for example: https://twitter.com/cat803/status/791877532274470912
+
 # 2do # keywords alphabetical. keywords on same line where they are variations of same word
+# 2do # manipulate keywords var to be lowercase so to allow users to enter any case variation
 
 import sys
 import os
@@ -35,59 +37,27 @@ auth.set_access_token(access_key, access_secret)
 api = tweepy.API(auth)
 
 #number = 200 #initial run
-number = 20 #reruns
+number_of_tweets = 20 #reruns
 
-keywords = [#'encrypt',
-			'ncrypt',
-			'crypto', 
-			'going dark',
-			'dark web',
-			#'backdoor', #backdoor amnesty
-			'golden key', #NOTHING
-			#'hack', #shack, shackleton, policy hack
-			'hacker', #thackerville, bushwhacker
-			'to hack', 
-			'hacking',
-			'hacked', #whacked
-			'hacktiv',
-			'password', 
-			'cyber', 
-			#'censor',
-			#'apple', 
-			'spyware',
-			'malware', 
-			'ransomware',
-			'702',
-			#'NSA', #HOVENSA, atkinson, NSAI (a band?)
-			' nsa', 
-			'#nsa',
-			'Snowden', 
-			'eff', 
-			'spyware',
-			#'server',
-			'rule 41',
-			'rule41',
-			#'virus',
-			'stingray',
-			'surveillance',
-			'patriot act',
-			'usa freedom',
-			'browserspying',
-			'ddos',
-			'information tech',
-			'device',
-			'internet of things',
-			'iot',
-			'identity theft',
-			'digital',
-			'digitized',
-			'intelligence']
+with open(os.path.expanduser('~') + '/.GITS/users-specific_topical_retweeter/keywords.txt', 'r') as keywordfile:
+    keywords = keywordfile.read().splitlines()
+
+##Add your keywords to a new keywords file in lowercase
+
+##To create and edit:
+#touch ~/.GITS/users-specific_topical_retweeter/keywords.txt
+#open ~/.GITS/users-specific_topical_retweeter/keywords.txt
+##Then put each word you want to include on its own line, e.g.:
+##climatechange
+##climate
+##globalwarming
+##climate
 
 #method to get a user's last # tweets
 def get_tweets(username):
 
-    #set count to however many tweets you want; twitter only allows max 200 at once
-    number_of_tweets = number
+#    #set count to however many tweets you want; twitter only allows max 200 at once
+#    number_of_tweets = number
 
     #get tweets
     tweets = api.user_timeline(screen_name = username,count = number_of_tweets)
@@ -104,18 +74,18 @@ def get_tweets(username):
             #print(cachelist)
             #print (result)
             if result == -1:
-#                print ("Tweet ID " +tweet.id_str+ " is being added to cache")  
+#                print ("Tweet ID " +tweet.id_str+ " is being added to cache")
                 with open("tweet_id_cachelist.txt", 'a') as cachefile:
                     cachefile.write(tweet.id_str + "\n")
                     #print ("tweetid == id on line,return triggered")
 
                     # Make tweet all lowercase
                     text = tweet.text.encode("utf-8").lower()
-                   
+
                     for word in keywords:
                         if word in text:
 
-                            if not ("RT @") in text:
+                            if not ("rt @") in text:
 
                                 print ("Keyword(s) found tweet has been added to retweet_list.txt")
                                 user = username.replace('\n', '').replace('\r', '')
@@ -153,6 +123,10 @@ with open(sys.argv[1], 'r') as userfile:
         ##    print ("https://twitter.com/" + username)
         except tweepy.TweepError as e:
             if str(e.reason) == "[{'message': 'Rate limit exceeded', 'code': 88}]":
+                print ("Twitter rate limit exceeded pausing for 1 hr")
+                import time
+                time.sleep(3601)
+            if str(e.reason) == "[{u'message': u'Rate limit exceeded', u'code': 88}]":
                 print ("Twitter rate limit exceeded pausing for 1 hr")
                 import time
                 time.sleep(3601)
